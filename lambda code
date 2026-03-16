@@ -1,0 +1,68 @@
+import boto3
+import time
+import json
+
+athena = boto3.client('athena')
+
+DATABASE = "ankita-database-demo"
+TABLE = "student_data"
+OUTPUT = "s3://ankita-demo-bucket-2003/query-results/"
+
+def lambda_handler(event, context):
+
+    params = event.get("queryStringParameters") or {}
+    query_type = params.get("type")
+
+    if query_type == "top":
+        query = f"SELECT * FROM {TABLE} WHERE marks > 80"
+    else:
+        query = f"SELECT * FROM {TABLE}"
+
+    response = athena.start_query_execution(
+        QueryString=query,
+        QueryExecutionContext={'Database': DATABASE},
+        ResultConfiguration={'OutputLocation': OUTPUT}
+    )
+
+    query_execution_id = response['QueryExecutionId']
+
+    while True:
+        result = athena.get_query_execution(QueryExecutionId=query_execution_id)
+        state = result['QueryExecution']['Status']['State']
+
+        if state in ['SUCCEEDED','FAILED','CANCELLED']:
+            break
+
+        time.sleep(1)
+
+    if state != "SUCCEEDED":
+        return {
+            "statusCode": 500,
+            "headers": {"Access-Control-Allow-Origin": "*"},
+            "body": json.dumps({"error": "Athena query failed", "state": state})
+        }
+
+    results = athena.get_query_results(QueryExecutionId=query_execution_id)
+
+    rows = results['ResultSet']['Rows'][1:]
+
+    data = []
+
+    for row in rows:
+        cols = row['Data']
+
+        data.append({
+            "id": cols[0].get('VarCharValue','') if len(cols)>0 else '',
+            "name": cols[1].get('VarCharValue','') if len(cols)>1 else '',
+            "age": cols[2].get('VarCharValue','') if len(cols)>2 else '',
+            "course": cols[3].get('VarCharValue','') if len(cols)>3 else '',
+            "marks": cols[4].get('VarCharValue','') if len(cols)>4 else ''
+        })
+
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "body": json.dumps(data)
+    }
