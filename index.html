@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Student Dashboard</title>
+</head>
+
+<body>
+
+<h1>Student Data Dashboard</h1>
+
+<button onclick="getAll()">Show All Students</button>
+<button onclick="getTop()">Marks > 80</button>
+
+<br><br>
+
+<table border="1">
+<thead>
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Age</th>
+<th>Course</th>
+<th>Marks</th>
+</tr>
+</thead>
+
+<tbody id="tableBody">
+</tbody>
+
+</table>
+
+<script>
+
+const API_URL = "https://lpgfulkfmssucylvn6zx7icmtu0qfgrq.lambda-url.us-east-1.on.aws/";
+
+function getAll(){
+fetch(API_URL + "?type=all")
+.then(res => res.json())
+.then(data => display(data));
+}
+
+function getTop(){
+fetch(API_URL + "?type=top")
+.then(res => res.json())
+.then(data => display(data));
+}
+
+function display(data){
+
+let table = document.getElementById("tableBody");
+table.innerHTML = "";
+
+data.forEach(student => {
+
+let row = `<tr>
+<td>${student.id}</td>
+<td>${student.name}</td>
+<td>${student.age}</td>
+<td>${student.course}</td>
+<td>${student.marks}</td>
+</tr>`;
+
+table.innerHTML += row;
+
+});
+
+}
+
+</script>
+
+</body>
+</html>
