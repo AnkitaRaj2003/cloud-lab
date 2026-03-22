@@ -50,6 +50,6 @@ app.delete("/notes/:id", (req,res)=>{
   res.json({msg:"deleted"});
 });
 
-app.listen(8000, ()=>{
+app.listen(8000, "0.0.0.0", ()=>{
   console.log("server running on 8000");
 });
